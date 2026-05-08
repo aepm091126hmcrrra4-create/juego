@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DB QUEST - Juego Relacional</title>
+
+<style>
+
+body{
+    margin:0;
+    background:#0f172a;
+    font-family:Arial, Helvetica, sans-serif;
+    color:white;
+    overflow:hidden;
+}
+
+h1{
+    text-align:center;
+    margin-top:10px;
+    color:#38bdf8;
+}
+
+.info{
+    text-align:center;
+    color:#cbd5e1;
+    margin-bottom:10px;
+}
+
+#game{
+    width:1150px;
+    height:620px;
+    background:#111827;
+    margin:auto;
+    position:relative;
+    border:4px solid #38bdf8;
+    border-radius:15px;
+    overflow:hidden;
+}
+
+.player{
+    width:60px;
+    height:60px;
+    background:#22c55e;
+    position:absolute;
+    left:40px;
+    top:270px;
+    border-radius:12px;
+    transition:.05s;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:bold;
+    font-size:20px;
+}
+
+.table{
+    width:280px;
+    height:170px;
+    position:absolute;
+    border-radius:12px;
+    padding:12px;
+    font-size:14px;
+}
+
+#usuarios{
+    background:#2563eb;
+    right:20px;
+    top:20px;
+}
+
+#productos{
+    background:#9333ea;
+    right:20px;
+    top:225px;
+}
+
+#pedidos{
+    background:#ea580c;
+    right:20px;
+    top:430px;
+}
+
+.code{
+    background:rgba(0,0,0,.3);
+    padding:8px;
+    border-radius:8px;
+    margin-top:10px;
+    font-family:monospace;
+    font-size:12px;
+}
+
+.question{
+    width:240px;
+    min-height:70px;
+    background:#facc15;
+    color:black;
+    position:absolute;
+    border-radius:12px;
+    padding:10px;
+    font-size:13px;
+    font-weight:bold;
+}
+
+.score{
+    text-align:center;
+    margin-top:10px;
+    font-size:24px;
+    color:#facc15;
+}
+
+.level{
+    text-align:center;
+    margin-top:10px;
+    font-size:24px;
+    color:#38bdf8;
+}
+
+.message{
+    position:absolute;
+    top:10px;
+    left:50%;
+    transform:translateX(-50%);
+    background:#16a34a;
+    padding:12px 20px;
+    border-radius:10px;
+    display:none;
+    font-weight:bold;
+    z-index:1000;
+    text-align:center;
+}
+
+.instructions{
+    width:1150px;
+    margin:auto;
+    text-align:center;
+    margin-top:10px;
+    color:#cbd5e1;
+}
+
+</style>
+</head>
+<body>
+
+<h1>JUEGA WE</h1>
+
+<div class="info">
+Usa las flechas para mover a tu mono y llevar los datos a la tabla correcta.
+</div>
+
+<div class="level">
+Nivel: <span id="nivel">1</span>
+</div>
+
+<div id="game">
+
+    <div class="message" id="message"></div>
+
+    <div class="player" id="player">
+        TU
+    </div>
+
+    <!-- TABLAS -->
+
+    <div class="table" id="usuarios">
+        <h2>👤 Usuarios</h2>
+        <p>Información de clientes registrados</p>
+
+        <div class="code">
+            CREATE TABLE usuarios(
+            id_usuario INT PRIMARY KEY,
+            nombre VARCHAR(50),
+            correo VARCHAR(80)
+            );
+        </div>
+    </div>
+
+    <div class="table" id="productos">
+        <h2>📦 Productos</h2>
+        <p>Inventario y artículos disponibles</p>
+
+        <div class="code">
+            CREATE TABLE productos(
+            id_producto INT PRIMARY KEY,
+            precio DECIMAL(10,2),
+            stock INT
+            );
+        </div>
+    </div>
+
+    <div class="table" id="pedidos">
+        <h2>🧾 Pedidos</h2>
+        <p>Órdenes y compras realizadas</p>
+
+        <div class="code">
+            CREATE TABLE pedidos(
+            id_pedido INT PRIMARY KEY,
+            id_usuario INT,
+            fecha DATE
+            );
+        </div>
+    </div>
+
+</div>
+
+<div class="score">
+⭐ Puntos: <span id="score">0</span>
+</div>
+
+<div class="instructions">
+Objetivo: Relaciona correctamente cada situación con su tabla correspondiente.
+</div>
+
+<script>
+
+const player = document.getElementById("player");
+const game = document.getElementById("game");
+
+let x = 40;
+let y = 270;
+
+let score = 0;
+let carrying = null;
+let nivel = 1;
+
+const niveles = {
+
+1:[
+{
+texto:"Guardar el nombre y correo electrónico de un nuevo estudiante registrado",
+target:"usuarios",
+x:180,
+y:70
+},
+{
+texto:"Registrar el precio y existencia de una memoria USB gamer",
+target:"productos",
+x:280,
+y:260
+},
+{
+texto:"Guardar la fecha y usuario que realizó una compra en línea",
+target:"pedidos",
+x:180,
+y:470
+}
+],
+
+2:[
+{
+texto:"Actualizar la contraseña y teléfono de un cliente del sistema",
+target:"usuarios",
+x:420,
+y:80
+},
+{
+texto:"Modificar el stock y costo de unos audífonos bluetooth",
+target:"productos",
+x:500,
+y:280
+},
+{
+texto:"Registrar un pedido con varios artículos seleccionados",
+target:"pedidos",
+x:400,
+y:500
+}
+],
+
+3:[
+{
+texto:"Almacenar el correo institucional de un profesor nuevo",
+target:"usuarios",
+x:250,
+y:120
+},
+{
+texto:"Guardar información de una laptop con precio actualizado",
+target:"productos",
+x:540,
+y:210
+},
+{
+texto:"Registrar una orden de compra realizada el día de hoy",
+target:"pedidos",
+x:320,
+y:430
+}
+]
+
+};
+
+function mezclar(array){
+
+    return array.sort(()=>Math.random() - 0.5);
+
+}
+
+function crearPreguntas(){
+
+    document.querySelectorAll(".question").forEach(q=>q.remove());
+
+    let preguntas = mezclar([...niveles[nivel]]);
+
+    preguntas.forEach((pregunta,index)=>{
+
+        const div = document.createElement("div");
+
+        div.classList.add("question");
+
+        div.style.left = pregunta.x + "px";
+        div.style.top = pregunta.y + "px";
+
+        div.innerHTML = pregunta.texto;
+
+        div.dataset.target = pregunta.target;
+
+        div.id = "q" + index;
+
+        game.appendChild(div);
+
+    });
+
+}
+
+crearPreguntas();
+
+document.addEventListener("keydown",(e)=>{
+
+    const speed = 15;
+
+    if(e.key === "ArrowUp") y -= speed;
+    if(e.key === "ArrowDown") y += speed;
+    if(e.key === "ArrowLeft") x -= speed;
+    if(e.key === "ArrowRight") x += speed;
+
+    if(x < 0) x = 0;
+    if(y < 0) y = 0;
+    if(x > 1080) x = 1080;
+    if(y > 560) y = 560;
+
+    player.style.left = x + "px";
+    player.style.top = y + "px";
+
+    detectarColision();
+
+});
+
+function detectarColision(){
+
+    const playerRect = player.getBoundingClientRect();
+
+    // PREGUNTAS
+    document.querySelectorAll(".question").forEach(question=>{
+
+        const rect = question.getBoundingClientRect();
+
+        if(
+            playerRect.left < rect.right &&
+            playerRect.right > rect.left &&
+            playerRect.top < rect.bottom &&
+            playerRect.bottom > rect.top
+        ){
+
+            carrying = question.dataset.target;
+
+            question.remove();
+
+            player.style.background = "#facc15";
+
+            mostrarMensaje("📘 Caso recogido");
+
+        }
+
+    });
+
+    // TABLAS
+    document.querySelectorAll(".table").forEach(table=>{
+
+        const rect = table.getBoundingClientRect();
+
+        if(
+            playerRect.left < rect.right &&
+            playerRect.right > rect.left &&
+            playerRect.top < rect.bottom &&
+            playerRect.bottom > rect.top
+        ){
+
+            if(carrying){
+
+                if(carrying === table.id){
+
+                    score += 100;
+
+                    mostrarMensaje("✅ Relación correcta");
+
+                }else{
+
+                    score -= 50;
+
+                    mostrarMensaje("❌ Tabla incorrecta");
+
+                }
+
+                document.getElementById("score").innerHTML = score;
+
+                carrying = null;
+
+                player.style.background = "#22c55e";
+
+                revisarNivel();
+
+            }
+
+        }
+
+    });
+
+}
+
+function revisarNivel(){
+
+    const restantes = document.querySelectorAll(".question");
+
+    if(restantes.length === 0){
+
+        if(nivel < 3){
+
+            nivel++;
+
+            document.getElementById("nivel").innerHTML = nivel;
+
+            crearPreguntas();
+
+            mostrarMensaje("🚀 Nivel " + nivel + " desbloqueado");
+
+        }else{
+
+            let mensajeFinal = "";
+
+            if(score >= 450){
+
+                mensajeFinal = `
+                🏆 ¡Juego completado!<br><br>
+                Puntaje final: ${score} puntos ⭐<br><br>
+                 Nada mal, entendiste bastante bien las bases de datos relacionales.
+                `;
+
+            }else{
+
+                mensajeFinal = `
+                💀 Juego terminado<br><br>
+                Puntaje final: ${score} puntos ⭐<br><br>
+                📚 Cambiate de carrera JAJA...
+                `
+
+            }
+
+            const msg = document.getElementById("message");
+
+            msg.innerHTML = mensajeFinal;
+
+            msg.style.display = "block";
+
+            msg.style.background = "#1e293b";
+            msg.style.padding = "25px";
+            msg.style.fontSize = "20px";
+
+        }
+
+    }
+
+}
+
+function mostrarMensaje(texto){
+
+    const msg = document.getElementById("message");
+
+    msg.innerHTML = texto;
+
+    msg.style.display = "block";
+
+    setTimeout(()=>{
+
+        if(nivel < 3 || document.querySelectorAll(".question").length > 0){
+            msg.style.display = "none";
+        }
+
+    },1500);
+
+}
+
+</script>
+
+</body>
+</html>
